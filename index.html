@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bảng Ca Làm Tháng</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f2f2f2;
+    }
+    h1 {
+      text-align: center;
+    }
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+      max-width: 100%;
+    }
+    .weekday-header {
+      font-weight: bold;
+      text-align: center;
+      background: #ddd;
+      padding: 5px;
+    }
+    .day {
+      background: white;
+      border: 1px solid #ccc;
+      padding: 5px;
+      min-height: 140px;
+      display: flex;
+      flex-direction: column;
+      font-size: 12px;
+    }
+    .day-number {
+      font-weight: bold;
+    }
+    .entry {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 2px;
+      align-items: center;
+    }
+    .entry input {
+      font-size: 11px;
+      height: 24px;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+      padding: 2px 4px;
+    }
+    .entry input.name {
+      flex: 2;
+    }
+    .entry input.shift {
+      flex: 2;
+    }
+    .summary {
+      margin-top: 30px;
+      text-align: center;
+    }
+    #filteredResult {
+      background: white;
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-top: 10px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+      font-size: 14px;
+      text-align: left;
+    }
+    button {
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Bảng Ca Làm</h1>
+
+  <div class="controls">
+    <button onclick="changeMonth(-1)" id="prevMonthBtn">&lt; Tháng trước</button>
+    <h2 id="monthYear"></h2>
+    <button onclick="changeMonth(1)" id="nextMonthBtn">Tháng sau &gt;</button>
+    <label>Số dòng mỗi ngày:
+      <input type="number" id="lineCount" value="3" min="1" max="10" onchange="renderCalendar(currentMonth, currentYear)">
+    </label>
+    <button onclick="exportPDF('calendar')">Xuất toàn bộ PDF</button>
+    <button onclick="resetCalendar()">Xóa toàn bộ</button>
+  </div>
+
+  <div class="calendar" id="calendar"></div>
+
+  <div class="summary">
+    <input type="text" id="nameInput" placeholder="Nhập tên nhân viên" />
+    <button onclick="calculateHours()">Lọc và tính giờ</button>
+    <button onclick="exportPDF('filteredResult')">Xuất PDF nhân viên</button>
+    <div id="filteredResult"></div>
+  </div>
+
+  <script>
+    const calendar = document.getElementById("calendar");
+    const monthYear = document.getElementById("monthYear");
+    let currentMonth = new Date().getMonth();
+    let currentYear = new Date().getFullYear();
+
+    const weekdays = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "CN"];
+
+    function renderCalendar(month, year) {
+      calendar.innerHTML = "";
+      monthYear.textContent = `Tháng ${month + 1}/${year}`;
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const startDay = firstDay === 0 ? 6 : firstDay - 1;
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const lineCount = parseInt(document.getElementById("lineCount").value) || 3;
+
+      weekdays.forEach(weekday => {
+        const header = document.createElement("div");
+        header.className = "weekday-header";
+        header.textContent = weekday;
+        calendar.appendChild(header);
+      });
+
+      for (let i = 0; i < startDay; i++) {
+        const empty = document.createElement("div");
+        calendar.appendChild(empty);
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const cell = document.createElement("div");
+        cell.className = "day";
+
+        const number = document.createElement("div");
+        number.className = "day-number";
+        number.textContent = day;
+
+        cell.appendChild(number);
+        for (let i = 0; i < lineCount; i++) {
+          const entry = document.createElement("div");
+          entry.className = "entry";
+
+          const name = document.createElement("input");
+          name.placeholder = "Tên";
+          name.className = "name";
+
+          const shift = document.createElement("input");
+          shift.placeholder = "Ca làm hoặc tự điền";
+          shift.className = "shift";
+          shift.addEventListener("focus", () => {
+            if (!shift.list) {
+              const datalist = document.createElement("datalist");
+              datalist.id = "shift-options";
+              ["8:30-18:30", "09:00-19:00"].forEach(time => {
+                const option = document.createElement("option");
+                option.value = time;
+                datalist.appendChild(option);
+              });
+              document.body.appendChild(datalist);
+              shift.setAttribute("list", "shift-options");
+            }
+          });
+
+          entry.appendChild(name);
+          entry.appendChild(shift);
+          cell.appendChild(entry);
+        }
+
+        calendar.appendChild(cell);
+      }
+    }
+
+    function changeMonth(delta) {
+      currentMonth += delta;
+      if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+      } else if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+      }
+      renderCalendar(currentMonth, currentYear);
+    }
+
+    function parseTimeRange(str) {
+      const match = str.match(/(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})/);
+      if (!match) return 0;
+      const [_, h1, m1, h2, m2] = match.map(Number);
+      return (h2 + m2 / 60) - (h1 + m1 / 60);
+    }
+
+    function calculateHours() {
+      const nameInput = document.getElementById("nameInput").value.trim().toLowerCase();
+      if (!nameInput) return;
+
+      let total = 0;
+      let log = "<h3>Kết quả cho nhân viên: " + nameInput + "</h3><ul>";
+
+      const days = document.querySelectorAll(".day");
+      days.forEach(day => {
+        const dayNumber = day.querySelector(".day-number").textContent;
+        const entries = day.querySelectorAll(".entry");
+
+        entries.forEach(entry => {
+          const nameEl = entry.querySelector("input.name");
+          const shiftEl = entry.querySelector("input.shift");
+          if (nameEl.value.trim().toLowerCase() === nameInput) {
+            const hours = parseTimeRange(shiftEl.value.trim());
+            total += hours;
+            log += `<li>Ngày ${dayNumber}: ${shiftEl.value.trim()} (${hours.toFixed(2)} giờ)</li>`;
+          }
+        });
+      });
+      log += `</ul><strong>Tổng cộng: ${total.toFixed(2)} giờ</strong>`;
+      document.getElementById("filteredResult").innerHTML = log;
+    }
+
+    function exportPDF(elementId) {
+      const element = document.getElementById(elementId);
+      html2pdf()
+        .set({ margin: 0.5, filename: `${elementId}_${currentMonth + 1}_${currentYear}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } })
+        .from(element)
+        .save();
+    }
+
+    function resetCalendar() {
+      if (!confirm("Bạn có chắc chắn muốn xóa toàn bộ dữ liệu trong tháng này không?")) return;
+      const inputs = document.querySelectorAll(".day input");
+      inputs.forEach(el => el.value = "");
+    }
+
+    renderCalendar(currentMonth, currentYear);
+  </script>
+</body>
+</html>
