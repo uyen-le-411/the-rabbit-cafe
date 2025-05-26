@@ -162,7 +162,7 @@
             if (!shift.list) {
               const datalist = document.createElement("datalist");
               datalist.id = "shift-options";
-              ["8:30-18:30", "09:00-19:00","10:00-17:00"].forEach(time => {
+              ["8:30-18:30", "09:00-19:00"].forEach(time => {
                 const option = document.createElement("option");
                 option.value = time;
                 datalist.appendChild(option);
@@ -175,6 +175,17 @@
           entry.appendChild(name);
           entry.appendChild(shift);
           cell.appendChild(entry);
+        }
+
+        const saved = JSON.parse(localStorage.getItem(`${month}_${year}`));
+        if (saved && saved[day - 1]) {
+          saved[day - 1].forEach((data, i) => {
+            const entry = cell.querySelectorAll(".entry")[i];
+            if (entry) {
+              entry.querySelector(".name").value = data.name;
+              entry.querySelector(".shift").value = data.shift;
+            }
+          });
         }
 
         calendar.appendChild(cell);
@@ -238,7 +249,29 @@
       if (!confirm("Bạn có chắc chắn muốn xóa toàn bộ dữ liệu trong tháng này không?")) return;
       const inputs = document.querySelectorAll(".day input");
       inputs.forEach(el => el.value = "");
+      localStorage.removeItem(`${currentMonth}_${currentYear}`);
     }
+
+    function saveDataToLocalStorage() {
+      const allData = {};
+      const days = document.querySelectorAll(".day");
+
+      days.forEach((day, index) => {
+        const entries = day.querySelectorAll(".entry");
+        const dayData = [];
+        entries.forEach(entry => {
+          const name = entry.querySelector(".name").value;
+          const shift = entry.querySelector(".shift").value;
+          dayData.push({ name, shift });
+        });
+        allData[index] = dayData;
+      });
+
+      const key = `${currentMonth}_${currentYear}`;
+      localStorage.setItem(key, JSON.stringify(allData));
+    }
+
+    document.addEventListener('input', saveDataToLocalStorage);
 
     renderCalendar(currentMonth, currentYear);
   </script>
