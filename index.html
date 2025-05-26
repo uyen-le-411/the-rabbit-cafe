@@ -44,15 +44,16 @@
     }
     .day-number {
       font-weight: bold;
+      font-size: 15px;
     }
     .entry {
       display: flex;
       gap: 5px;
-      margin-bottom: 2px;
+      margin-bottom: 5px;
       align-items: center;
     }
     .entry input {
-      font-size: 11px;
+      font-size: 15px;
       height: 24px;
       border: 1px solid #ddd;
       border-radius: 3px;
@@ -83,7 +84,23 @@
       padding: 8px 16px;
       font-size: 14px;
       cursor: pointer;
+
     }
+    #filteredResult table {
+  font-size: 14px;
+  width: 100%;
+  border: 1px solid #ccc;
+}
+#filteredResult th, #filteredResult td {
+  border: 1px solid #aaa;
+  padding: 6px;
+  text-align: center;
+}
+#filteredResult h3, #filteredResult p {
+  text-align: center;
+}
+
+
   </style>
 </head>
 <body>
@@ -105,7 +122,7 @@
   <div class="summary">
     <input type="text" id="nameInput" placeholder="Nhập tên nhân viên" />
     <button onclick="calculateHours()">Lọc và tính giờ</button>
-    <button onclick="exportPDF('filteredResult')">Xuất PDF nhân viên</button>
+    <button onclick="exportEmployeePDF()">Xuất PDF nhân viên</button>
     <div id="filteredResult"></div>
   </div>
 
@@ -212,29 +229,56 @@
     }
 
     function calculateHours() {
-      const nameInput = document.getElementById("nameInput").value.trim().toLowerCase();
+  const nameInput = document.getElementById("nameInput").value.trim().toLowerCase();
+  if (!nameInput) return;
+
+  let total = 0;
+  let tableHTML = `
+    <div id="employeeReport">
+      <h3>Nhân viên: ${nameInput}</h3>
+      <table border="1" cellpadding="5" cellspacing="0" style="width:100%; border-collapse: collapse;">
+        <thead>
+          <tr><th>Ngày</th><th>Giờ làm</th><th>Số giờ</th></tr>
+        </thead>
+        <tbody>
+  `;
+
+  const days = document.querySelectorAll(".day");
+  days.forEach(day => {
+    const dayNumber = day.querySelector(".day-number").textContent;
+    const entries = day.querySelectorAll(".entry");
+
+    entries.forEach(entry => {
+      const nameEl = entry.querySelector("input.name");
+      const shiftEl = entry.querySelector("input.shift");
+      if (nameEl.value.trim().toLowerCase() === nameInput) {
+        const shiftValue = shiftEl.value.trim();
+        const hours = parseTimeRange(shiftValue);
+        total += hours;
+        tableHTML += `<tr><td> ${dayNumber}</td><td>${shiftValue}</td><td>${hours.toFixed(2)} giờ</td></tr>`;
+      }
+    });
+  });
+
+  tableHTML += `
+        </tbody>
+      </table>
+      <p style="text-align: right; font-weight: bold;">Tổng cộng: ${total.toFixed(2)} giờ</p>
+    </div>
+  `;
+
+  document.getElementById("filteredResult").innerHTML = tableHTML;
+}
+
+
+    function exportEmployeePDF() {
+      const nameInput = document.getElementById("nameInput").value.trim();
       if (!nameInput) return;
-
-      let total = 0;
-      let log = "<h3>Kết quả cho nhân viên: " + nameInput + "</h3><ul>";
-
-      const days = document.querySelectorAll(".day");
-      days.forEach(day => {
-        const dayNumber = day.querySelector(".day-number").textContent;
-        const entries = day.querySelectorAll(".entry");
-
-        entries.forEach(entry => {
-          const nameEl = entry.querySelector("input.name");
-          const shiftEl = entry.querySelector("input.shift");
-          if (nameEl.value.trim().toLowerCase() === nameInput) {
-            const hours = parseTimeRange(shiftEl.value.trim());
-            total += hours;
-            log += `<li>Ngày ${dayNumber}: ${shiftEl.value.trim()} (${hours.toFixed(2)} giờ)</li>`;
-          }
-        });
-      });
-      log += `</ul><strong>Tổng cộng: ${total.toFixed(2)} giờ</strong>`;
-      document.getElementById("filteredResult").innerHTML = log;
+      const element = document.getElementById("employeeReport");
+      html2pdf()
+        .set({ margin: 0.5, filename: `${nameInput}_Thang${currentMonth + 1}_${currentYear}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } })
+        .from(element)
+        .save();
     }
 
     function exportPDF(elementId) {
