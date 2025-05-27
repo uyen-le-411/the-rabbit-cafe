@@ -183,6 +183,23 @@
           name.placeholder = "Tên";
           name.className = "name";
 
+          name.addEventListener("focus", () => {
+  if (!name.list) {
+    const datalist = document.createElement("datalist");
+    datalist.id = "name-options";
+
+  
+    ["Uyên", "Bích", "Hồng", "Thi", "Hùng", "Hà", "Vũ", "QA"].forEach(n => {
+      const option = document.createElement("option");
+      option.value = n;
+      datalist.appendChild(option);
+    });
+
+    document.body.appendChild(datalist);
+    name.setAttribute("list", "name-options");
+  }
+});
+
           const shift = document.createElement("input");
           shift.placeholder = "Ca làm hoặc tự điền";
           shift.className = "shift";
