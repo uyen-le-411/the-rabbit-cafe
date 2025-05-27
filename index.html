@@ -108,6 +108,8 @@
 
   </style>
 </head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
 <body>
   <div style="text-align: center; margin-bottom: 10px;">
   <img src="the_rabbit_cafe.jpg" alt="Logo quán" style="max-height: 100px;" />
@@ -280,20 +282,12 @@
 }
 
 
-    function exportEmployeePDF() {
-      const nameInput = document.getElementById("nameInput").value.trim();
-      if (!nameInput) return;
-      const element = document.getElementById("employeeReport");
-      html2pdf()
-        .set({ margin: 0.5, filename: `${nameInput}_Thang${currentMonth + 1}_${currentYear}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } })
-        .from(element)
-        .save();
-    }
+    
 
     function exportPDF(elementId) {
       const element = document.getElementById(elementId);
       html2pdf()
-        .set({ margin: 0.5, filename: `${elementId}_${currentMonth + 1}_${currentYear}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } })
+        .set({ margin: 0.5, filename: `${elementId}_${currentMonth + 1}_${currentYear}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 4 }, jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } })
         .from(element)
         .save();
     }
@@ -327,6 +321,33 @@
     document.addEventListener('input', saveDataToLocalStorage);
 
     renderCalendar(currentMonth, currentYear);
+
+   
+   
+  function exportPDF() {
+    const element = document.getElementById('filteredResult');
+
+    // Lấy tên nhân viên từ nội dung hiển thị
+    const nameElement = element.querySelector('h2');
+    let employeeName = 'nhan_vien';
+    if (nameElement) {
+      const match = nameElement.textContent.match(/Nhân viên:\s*(.*)/i);
+      if (match) {
+        employeeName = match[1].trim().replace(/\s+/g, '_').toLowerCase();
+      }
+    }
+
+    const opt = {
+      margin:       0.5,
+      filename:     `lich_lam_${employeeName}.pdf`, // Tên file chứa tên nhân viên
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save();
+  }
+
   </script>
 </body>
 </html>
